@@ -25,21 +25,24 @@ include macros.asm
  bufferJSON db 3000 dup('$')
  bufferCadena db 30 dup('$')
  rutaIngresada db 200 dup(0),0
+ rutaArchivo db 'input.json',00h
+ saltoLinea db 0ah,0dh,'$'
+ llaveAbre db '{','$'
+ llaveCierra db '}','$'
+ contadorLlave db 0,'$'
+ imprimir db 'x','$' 
+ numeros db '$$$$$$','$'
+ preorder dw 300 dup('$')
+ 
 handleCarga dw ?
+handleFichero dw ?
 
 .code 
     main proc
         print intro1
         print intro2
-
         MENU:
         print opciones
-        mov bufferJSON[0],'"'
-        mov bufferJSON[1],'a'
-        mov bufferJSON[2],'d'
-        mov bufferJSON[3],'d'
-        mov bufferJSON[4],'"'
-        print bufferJSON
              getChar
             cmp al,49
             je OPCION1

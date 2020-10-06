@@ -15,6 +15,17 @@ getChar macro
     int 21h
 endm
 
+printARR macro cadena, idx 
+	LOCAL ETIQUETA 
+	push si
+	ETIQUETA: 
+		MOV ah,02h 
+		MOV si,idx
+		MOV dl, cadena[idx] 
+		int 21h
+		pop si
+endm
+
 
 getTexto macro buffer
     LOCAL CONTINUE, FIN
@@ -40,36 +51,202 @@ endm
 ;-------------------------------------------------- ANALIZADOR LEXICO -----------------------------------------------------
 
 analizarArchivo macro buffer
-	LOCAL CICLO, verSuma, analizar, omitir, fin
+	LOCAL CICLO, verSuma, analizar, omitir, fin, verResta, restar,verMulti,multiplicar,verDivi, dividir,llaveA,llaveC, numero,negativo
 	xor si, si
 	mov si,0
 	getTexto rutaIngresada
 	abrirArchivo rutaIngresada, handleCarga
 	leerArchivo 3000, buffer, handleCarga
-	print buffer
 	CICLO:
 		cmp buffer[si],'"'
 		je analizar
-		jmp omitir
-	analizar:
-		limpiarCadena bufferCadena,30
-		copiarTexto bufferCadena, buffer
-	
-	verSuma:
-		compararCadenas bufferCadena, suma, igual
-		cmp igual, '0'
-		je omitir
-		print suma
+		cmp buffer[si],'{'
+		je llaveA
+		cmp buffer[si],'}'
+		je llaveC
+		cmp buffer[si],'-'
+		je negativo
+		cmp buffer[si],48
+		jb omitir
+		cmp buffer[si],57
+		ja omitir
+		jmp numero
+		analizar:
+			limpiarCadena bufferCadena,30
+			copiarTexto bufferCadena, buffer
+		
+		verSuma:
+			compararCadenas bufferCadena, suma, igual
+			cmp igual, '1'
+			je sumar 	
+			compararCadenas bufferCadena, suma1, igual
+			cmp igual, '1'
+			je sumar 
+		
+		verResta:
+			compararCadenas bufferCadena, resta, igual
+			cmp igual, '1'
+			je restar 	
+			compararCadenas bufferCadena, resta1, igual
+			cmp igual, '1'
+			je restar 
 
-	omitir:
-		cmp buffer[si],'$'
-		je fin
+		verMulti:
+			compararCadenas bufferCadena, multi, igual
+			cmp igual, '1'
+			je multiplicar 	
+			compararCadenas bufferCadena, multi1, igual
+			cmp igual, '1'
+			je multiplicar
+			
+		verDivi:
+			compararCadenas bufferCadena, divi, igual
+			cmp igual, '1'
+			je dividir 	
+			compararCadenas bufferCadena, divi1, igual
+			cmp igual, '1'
+			je dividir 
+		
+		jmp omitir
+
+		sumar:
+			print suma
+			print saltoLinea
+			agregarToken suma1
+			sumarContador actual
+			jmp omitir
+		restar:
+			print resta
+			print saltoLinea
+			agregarToken resta1
+			sumarContador actual
+			jmp omitir
+
+		multiplicar:
+			print multi
+			print saltoLinea
+			agregarToken multi1
+			sumarContador actual
+			jmp omitir
+			
+		dividir:
+			print divi
+			print saltoLinea
+			agregarToken divi1
+			sumarContador actual
+			jmp omitir
+		
+		llaveA:
+			sumarContador contadorLlave
+			print llaveAbre
+			print saltoLinea
+			jmp omitir
+		llaveC:
+			restarContador contadorLlave
+			print llaveCierra
+			print saltoLinea
+			cmp contadorLlave, 0
+			je fin
+			jmp omitir
+		
+		numero:
+			limpiarCadena bufferCadena,30
+			copiarNumero bufferCadena, buffer, 0
+			toNumber bufferCadena
+			agregarNumero
+			aumentarPush
+			print bufferCadena
+			print saltoLinea
+			jmp omitir
+		
+		negativo:
+			limpiarCadena bufferCadena,30
+			push ax
+			mov al, buffer[si]
+			mov bufferCadena[0], al
+			pop ax
+			inc si
+			copiarNumero bufferCadena, buffer, 1
+			toNumber bufferCadena
+			toString numeros
+			print numeros
+			print saltoLinea
+		omitir:
+			cmp buffer[si],'$'
+			je fin
 	
 	inc si
 	jmp CICLO
 	fin:	
 	
 endm 
+
+agregarToken macro token 
+	push ax
+	push di
+	push bx
+	xor di, di
+	xor al, al
+	xor bx, bx
+	mov al, token[0]
+	mov ah, '$'
+	mov bl, actual[0]
+	mov di, bx
+	mov preorder[di], ax
+	pop bx
+	pop di
+	pop ax 
+
+endm
+
+agregarNumero macro 
+	push di
+	push bx
+	xor di, di
+	xor bx, bx
+	mov bl, actual[0]
+	mov di, bx
+	mov preorder[di], ax
+	pop bx
+	pop di
+endm
+
+sumarContador macro contador
+	push ax
+	xor ax, ax
+	mov al, contador
+	add al,1
+	mov contadorLlave, al
+	;add al, 49
+	;mov imprimir, al
+	;print imprimir
+	pop ax
+
+endm
+
+
+aumentarPush macro 
+	push bx
+	xor bx, bx
+	mov bl, actual[0]
+	add bl,2
+	mov actual[0], bl
+	pop bx
+
+endm
+
+restarContador macro contador
+	push ax
+	xor ax, ax
+	mov al, contador
+	sub al,1
+	mov contadorLlave, al
+	;add al, 49
+	;mov imprimir, al
+	;print imprimir
+	pop ax
+endm
+
 
 limpiarCadena macro buffer, length
 	LOCAL CICLO
@@ -80,7 +257,8 @@ limpiarCadena macro buffer, length
 	xor di, di
 	mov di,0
 	CICLO:
-		mov buffer[si],'$'
+		mov buffer[di],'$'
+		inc di
 	LOOP CICLO
 	pop di
 	pop cx			
@@ -107,10 +285,30 @@ copiarTexto macro buffer,lectura
 	pop di
 endm
 
+copiarNumero macro buffer,lectura, num
+	LOCAL mientras, salir
+	push di
+	xor di, di
+	mov di, num
+	mientras:
+		cmp lectura[si],48
+		jb salir
+		cmp lectura[si],57
+		ja salir
+		mov al, lectura[si]
+		mov buffer[di], al
 
+		inc si
+		inc di
+	jmp mientras
+
+	salir:
+	dec si
+	pop di
+endm
 
 compararCadenas macro cadena1,cadena2,bandera
-	LOCAL comp,fin,igual
+	LOCAL comp,fin,igual1, igual2
 	push di
 	push bx
 	mov bandera[0],'0'
@@ -177,3 +375,112 @@ closefile macro handler
 endm
 
 
+crearArchivo macro buffer,handle
+    mov ah,3ch
+    mov cx,00h
+    lea dx,buffer
+    int 21h
+    jc ErrorCrear
+    mov handle,ax
+endm
+
+;------------------------------------------------ CONVERSIONES ------------------------------------
+toNumber macro string
+        local inicio, EndGC, NegativeSymbol, Negative
+        Push si
+        
+        xor ax, ax
+        xor bx, bx
+        xor cx, cx
+        xor dx, dx
+        mov bx, 10
+        xor si, si
+        xor di, di
+        ; Check signs
+        inicio:
+            mov cl, string[si]      
+            ; If the ascii is +
+            cmp cl, '-'
+                je NegativeSymbol
+            ; If the ascii is less than the ascii of 0
+            cmp cl, 48
+                jl EndGC
+            ; If the ascii is more than the ascii of 9
+            cmp cl, 57
+                jg EndGC
+            inc si
+            sub cl, 48  ; Subtract 48 to get the number
+            mul bx      ; Multiply by 10
+            add ax, cx
+
+            jmp inicio
+        NegativeSymbol:
+            inc di            
+            inc si
+            jmp inicio
+        Negative:
+            ;TestingAX
+            xor di, di
+            neg ax
+            xor dx, dx
+        EndGC:        
+            cmp di, 01h
+                je Negative
+            Pop si
+endm
+
+toString macro string
+        local Divide, Divide2, EndCr3, Negative, End2, EndGC
+        Push si
+        xor si, si
+        xor cx, cx
+        xor bx, bx
+        xor dx, dx
+        mov dl, 0ah
+        test ax, 1000000000000000b
+            jnz Negative
+        jmp Divide2
+        Negative:
+            neg ax
+            mov string[si], 45
+            inc si
+            jmp Divide2
+        
+        Divide:
+            xor ah, ah
+        Divide2:
+            div dl
+            inc cx
+            Push ax
+            cmp al, 00h
+                je EndCr3
+            jmp Divide
+        EndCr3:
+            pop ax
+            add ah, 30h
+            mov string[si], ah
+            inc si
+        Loop EndCr3
+        mov ah, 24h
+        mov string[si], ah
+        inc si
+        EndGC:
+            Pop si
+    endm
+
+    ConvertToStringDH macro string, numberToConvert
+        Push ax
+        Push bx
+
+        xor ax, ax
+        xor bx, bx
+        mov bl, 0ah
+        mov al, numberToConvert
+        div bl
+
+        getNumber string, al
+        getNumber string, ah
+
+        Pop ax
+        Pop bx
+    endm
