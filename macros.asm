@@ -113,39 +113,39 @@ analizarArchivo macro buffer
 			print suma
 			print saltoLinea
 			agregarToken suma1
-			sumarContador actual
+			aumentarPush
 			jmp omitir
 		restar:
 			print resta
 			print saltoLinea
 			agregarToken resta1
-			sumarContador actual
+			aumentarPush
 			jmp omitir
 
 		multiplicar:
 			print multi
 			print saltoLinea
 			agregarToken multi1
-			sumarContador actual
+			aumentarPush
 			jmp omitir
 			
 		dividir:
 			print divi
 			print saltoLinea
 			agregarToken divi1
-			sumarContador actual
+			aumentarPush
 			jmp omitir
 		
 		llaveA:
-			sumarContador contadorLlave
+			sumarContador 
 			print llaveAbre
 			print saltoLinea
 			jmp omitir
 		llaveC:
-			restarContador contadorLlave
+			restarContador 
 			print llaveCierra
 			print saltoLinea
-			cmp contadorLlave, 0
+			cmp contadorLlave[0], 0
 			je fin
 			jmp omitir
 		
@@ -178,7 +178,7 @@ analizarArchivo macro buffer
 	inc si
 	jmp CICLO
 	fin:	
-	
+		operar
 endm 
 
 agregarToken macro token 
@@ -211,12 +211,12 @@ agregarNumero macro
 	pop di
 endm
 
-sumarContador macro contador
+sumarContador macro
 	push ax
 	xor ax, ax
-	mov al, contador
+	mov al, contadorLlave[0]
 	add al,1
-	mov contadorLlave, al
+	mov contadorLlave[0], al
 	;add al, 49
 	;mov imprimir, al
 	;print imprimir
@@ -231,16 +231,17 @@ aumentarPush macro
 	mov bl, actual[0]
 	add bl,2
 	mov actual[0], bl
+	
 	pop bx
 
 endm
 
-restarContador macro contador
+restarContador macro 
 	push ax
 	xor ax, ax
-	mov al, contador
+	mov al, contadorLlave[0]
 	sub al,1
-	mov contadorLlave, al
+	mov contadorLlave[0], al
 	;add al, 49
 	;mov imprimir, al
 	;print imprimir
@@ -338,7 +339,141 @@ compararCadenas macro cadena1,cadena2,bandera
 	pop di
 endm
 
+;
+;------------------------------------------------- OPERAR --------------------------------------------------------
+operar macro
+	push si
+	push cx
+	push ax
+	xor ax, ax
+	xor si, si
+	mov si,10
+	ejectuar
+	mov ax,preorder[0]
+	toString numeros
+	print numeros
+	pop ax
+	pop cx
+	pop si
+endm
 
+ejectuar macro
+LOCAL sumar, salir, izquierda, derecha, terminar, reiniciar, seahueva, restar
+	LOCAL INCIO, CICLO, sumar
+	push  cx
+	INCIO:
+	mov si, 0
+	mov cx, 100
+		CICLO: 
+			xor dx,dx
+			xor ax, ax
+			xor bx,bx
+			mov dx, preorder[si]
+			cmp dl ,'$'
+			je seahueva
+			cmp dl, '+'
+			je sumar
+			cmp dl, '-'
+			je restar
+			jmp siguiente
+
+			sumar:
+				verficarIz
+				cmp which[0],'0'
+				je siguiente
+				verficarDe
+				cmp which[0],'0'
+				je siguiente
+				mov ax, preorder[si+2]
+				mov bx, preorder[si+4]
+				add ax,bx
+				mov preorder[si], ax
+				toString numeros
+				print numeros
+				print saltoLinea
+				jmp reiniciar
+			restar:
+				print resta
+				verficarIz
+				cmp which[0],'0'
+				je siguiente
+				verficarDe
+				cmp which[0],'0'
+				je siguiente
+				mov ax, preorder[si+2]
+				mov bx, preorder[si+4]
+				sub ax,bx
+				mov preorder[si], ax
+				toString numeros
+				print numeros
+				print saltoLinea
+				jmp reiniciar
+			siguiente:
+				add si,2
+				dec cx
+			jne CICLO
+			jmp terminar
+			reiniciar:
+				moverTodos
+				jmp INCIO
+			seahueva:
+				print multi1
+	terminar:
+	pop cx
+endm
+
+verficarIz macro
+	LOCAL continuar
+	push dx
+	mov which[0],'0'
+	mov dx,preorder[si+2]
+	cmp dl,'+'
+	je continuar	
+	mov which[0],'1'
+
+	continuar:
+
+	pop dx
+endm
+
+moverTodos macro
+	LOCAL CICLO
+	push dx
+	push cx
+	inc si 
+	inc si
+	CICLO:
+		xor dx, dx
+		mov dx, preorder[si+4]
+		mov preorder[si], dx
+		inc si 
+		inc si
+		mov imprimir[0],dl
+		add dl,48
+		print imprimir
+		cmp si,300
+		je terminar
+		jmp CICLO
+	terminar:
+		;print multi
+		;print saltoLinea
+	pop cx
+	pop dx
+endm
+
+verficarDe macro
+	LOCAL continuar
+	push dx
+	mov which,'0'
+	mov dx,preorder[si+4]
+	cmp dl,'+'
+	je continuar	
+	mov which,'1'
+
+	continuar:
+
+	pop dx
+endm
 ;------------------------------------------------ MANEJO DE ARCHIVOS ---------------------------------------------------------
 abrirArchivo macro ruta,handle
     mov ah,3dh
@@ -346,7 +481,7 @@ abrirArchivo macro ruta,handle
     lea dx,ruta
     int 21h
     mov handle,ax
-    ;jc ErrorAbrir
+    jc ErrorAbrir
 endm
 
 

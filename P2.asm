@@ -12,8 +12,9 @@ include macros.asm
  msmError2 db 0ah,0dh,'Error al leer archivo','$'
  msmError3 db 0ah,0dh,'Error al crear archivo','$'
  msmError4 db 0ah,0dh,'Error al Escribir archivo','$'
+ msmError5 db 0ah,0dh,'Error al abrir archivo','$'
  igual db '0','$'
- actual db 0
+ actual db 0,'$'
  suma db 'add','$'
  resta db 'sub','$'
  multi db 'mul','$'
@@ -33,7 +34,9 @@ include macros.asm
  imprimir db 'x','$' 
  numeros db '$$$$$$','$'
  preorder dw 300 dup('$')
- 
+ left dw 1 dup('$')
+ rigth dw 1 dup('$')
+ which db '0','$'
 handleCarga dw ?
 handleFichero dw ?
 
@@ -70,6 +73,10 @@ handleFichero dw ?
 	    	print msmError4
 	    	getChar
 	    	jmp MENU   
+            
+	        ErrorAbrir:
+	    	print msmError5
+	    	jmp MENU
             SALIR: 
 			MOV ah,4ch
 			int 21h
