@@ -38,6 +38,11 @@ include macros.asm
  rigth dw 1 dup('$')
  which db '0','$'
  entra db 'entra','$'
+ signo db '0','$'
+ signo1 db '0','$'
+ signo2 db '0','$'
+ numeral db '#','$'
+ estado db '0', '$'
 handleCarga dw ?
 handleFichero dw ?
 

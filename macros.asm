@@ -54,19 +54,32 @@ endm
 ;-------------------------------------------------- ANALIZADOR LEXICO -----------------------------------------------------
 
 analizarArchivo macro buffer
-	LOCAL CICLO, verSuma, analizar, omitir, fin, verResta, restar,verMulti,multiplicar,verDivi, dividir,llaveA,llaveC, numero,negativo
+	LOCAL CICLO, verSuma, analizar, omitir, fin, verResta, restar,verMulti,multiplicar,verDivi, dividir,llaveA,llaveC, numero,negativo, verNumero
+	LOCAL estado0, estado1
 	xor si, si
 	mov si,0
 	getTexto rutaIngresada
 	abrirArchivo rutaIngresada, handleCarga
 	leerArchivo 3000, buffer, handleCarga
 	CICLO:
+
+		cmp estado[0], '0'
+		je estado0
+		cmp estado[0], '1'
+		je estado1
+		estado0:
 		cmp buffer[si],'"'
 		je analizar
 		cmp buffer[si],'{'
 		je llaveA
 		cmp buffer[si],'}'
 		je llaveC
+		ja omitir
+
+
+		estado1:
+		cmp buffer[si],'"'
+		je analizar
 		cmp buffer[si],'-'
 		je negativo
 		cmp buffer[si],48
@@ -110,34 +123,49 @@ analizarArchivo macro buffer
 			cmp igual, '1'
 			je dividir 
 		
-		jmp omitir
+		verNumero:
+			comparar buffercadena, numeral, igual
+			cmp igual,'1'
+			je verNumero
+
+			jmp omitir
 
 		sumar:
 			agregarToken suma1
 			aumentarPush
+			mov estado[0],'0'
 			jmp omitir
 		restar:
 			agregarToken resta1
 			aumentarPush
+			mov estado[0],'0'
 			jmp omitir
 
 		multiplicar:
 			agregarToken multi1
 			aumentarPush
+			mov estado[0],'0'
 			jmp omitir
 			
 		dividir:
 			agregarToken divi1
 			aumentarPush
+			mov estado[0],'0'
 			jmp omitir
 		
 		llaveA:
-			sumarContador 
+			sumarContador
+			mov estado[0],'0' 
 			jmp omitir
 		llaveC:
-			restarContador 
+			restarContador
+			mov estado[0],'0' 
 			cmp contadorLlave[0], 0
 			je fin
+			jmp omitir
+		
+		estadoNumero:			
+			mov estado[0],'1'
 			jmp omitir
 		
 		numero:
@@ -146,6 +174,7 @@ analizarArchivo macro buffer
 			toNumber bufferCadena
 			agregarNumero
 			aumentarPush
+			mov estado[0],'0'
 			jmp omitir
 		
 		negativo:
@@ -163,6 +192,7 @@ analizarArchivo macro buffer
 			popear
 			agregarNumero
 			aumentarPush
+			mov estado[0],'0'
 
 		omitir:
 			cmp buffer[si],'$'
@@ -357,7 +387,7 @@ endm
 
 ejectuar macro
 LOCAL sumar, salir, izquierda, derecha, terminar, reiniciar, seahueva, restar, dividir
-	LOCAL INCIO, CICLO, sumar, multiplicar, restar
+	LOCAL INCIO, CICLO, sumar, multiplicar, restar, mover, negar
 	push  cx
 	;print entra 
 	INCIO:
@@ -440,10 +470,21 @@ LOCAL sumar, salir, izquierda, derecha, terminar, reiniciar, seahueva, restar, d
 				xor cx, cx
 				xor ax, ax
 				mov ax, preorder[si+2]
-				mov cx, 2
+				mov cx, preorder[si+4]
+				obtenerSigno
+				quitarSignoIz
+				quitarSignoDe
 				xor dx, dx
 				mov dx,0
 				div cx
+				;neg ax
+				cmp signo[0],'1'
+				je negar
+				jmp mover
+				negar: 
+					neg ax
+				
+				mover:
 				;pushear;
 				;toString numeros
 				;print numeros
@@ -527,7 +568,61 @@ moverTodos macro
 	pop cx
 	pop dx
 endm 
+obtenerSigno macro
+local negativo, negativo1, negativo2, operador2, comparar, salir
+	pushear
+	mov signo[0],'0'
+	mov signo1[0],'0'
+	mov signo2[0],'0'
+	test ax,1000000000000000b
+	jnz negativo1
+	jmp operador2
+	negativo1:
+		mov signo1[0],'1'
 
+	operador2:
+	test cx,1000000000000000b
+	jnz negativo2
+	jmp comparar
+	negativo2:
+		mov signo2[0],'1'
+
+	comparar:	
+	mov al, signo1[0]
+	mov ah, signo2[0]
+	cmp al, ah
+	jne negativo
+	jmp salir
+	negativo:
+		mov signo[0],'1'
+	salir:
+
+	popear
+
+endm
+
+
+quitarSignoIz macro
+	local salir, negativo
+
+	test ax,1000000000000000b
+	jnz negativo
+	jmp salir
+	negativo:
+		neg ax
+	salir:
+endm
+
+quitarSignoDe macro
+	local salir, negativo
+
+	test cx,1000000000000000b
+	jnz negativo
+	jmp salir
+	negativo:
+		neg cx
+	salir:
+endm
 
 
 ;------------------------------------------------ MANEJO DE ARCHIVOS ---------------------------------------------------------
