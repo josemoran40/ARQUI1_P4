@@ -12,7 +12,7 @@ include macros.asm
  msmError2 db 0ah,0dh,'Error al leer archivo','$'
  msmError3 db 0ah,0dh,'Error al crear archivo','$'
  msmError4 db 0ah,0dh,'Error al Escribir archivo','$'
- msmError5 db 0ah,0dh,'Error al abrir archivo','$'
+ msmError5 db 0ah,0dh,'Error al abrir    archivo','$'
  igual db '0','$'
  actual db 0,'$'
  suma db 'add','$'
@@ -37,6 +37,7 @@ include macros.asm
  left dw 1 dup('$')
  rigth dw 1 dup('$')
  which db '0','$'
+ entra db 'entra','$'
 handleCarga dw ?
 handleFichero dw ?
 

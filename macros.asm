@@ -2,12 +2,15 @@
 ;--------------------------------------------------- IMPRMIR ---------------------------------------------
 print macro cadena 
  LOCAL ETIQUETA 
+ pushear 
  ETIQUETA: 
 	MOV ah,09h 
 	MOV dx,@data
 	MOV ds,dx 
 	MOV dx, offset cadena
 	int 21h 
+
+popear
 endm
 
 getChar macro
@@ -110,41 +113,29 @@ analizarArchivo macro buffer
 		jmp omitir
 
 		sumar:
-			print suma
-			print saltoLinea
 			agregarToken suma1
 			aumentarPush
 			jmp omitir
 		restar:
-			print resta
-			print saltoLinea
 			agregarToken resta1
 			aumentarPush
 			jmp omitir
 
 		multiplicar:
-			print multi
-			print saltoLinea
 			agregarToken multi1
 			aumentarPush
 			jmp omitir
 			
 		dividir:
-			print divi
-			print saltoLinea
 			agregarToken divi1
 			aumentarPush
 			jmp omitir
 		
 		llaveA:
 			sumarContador 
-			print llaveAbre
-			print saltoLinea
 			jmp omitir
 		llaveC:
 			restarContador 
-			print llaveCierra
-			print saltoLinea
 			cmp contadorLlave[0], 0
 			je fin
 			jmp omitir
@@ -155,8 +146,6 @@ analizarArchivo macro buffer
 			toNumber bufferCadena
 			agregarNumero
 			aumentarPush
-			print bufferCadena
-			print saltoLinea
 			jmp omitir
 		
 		negativo:
@@ -168,9 +157,13 @@ analizarArchivo macro buffer
 			inc si
 			copiarNumero bufferCadena, buffer, 1
 			toNumber bufferCadena
+			limpiarCadena numeros, 4
+			pushear
 			toString numeros
-			print numeros
-			print saltoLinea
+			popear
+			agregarNumero
+			aumentarPush
+
 		omitir:
 			cmp buffer[si],'$'
 			je fin
@@ -207,6 +200,11 @@ agregarNumero macro
 	mov bl, actual[0]
 	mov di, bx
 	mov preorder[di], ax
+	pushear
+	;toString numeros
+	;print numeros
+	;print saltoLinea
+	popear
 	pop bx
 	pop di
 endm
@@ -358,9 +356,10 @@ operar macro
 endm
 
 ejectuar macro
-LOCAL sumar, salir, izquierda, derecha, terminar, reiniciar, seahueva, restar
-	LOCAL INCIO, CICLO, sumar
+LOCAL sumar, salir, izquierda, derecha, terminar, reiniciar, seahueva, restar, dividir
+	LOCAL INCIO, CICLO, sumar, multiplicar, restar
 	push  cx
+	;print entra 
 	INCIO:
 	mov si, 0
 	mov cx, 100
@@ -369,12 +368,17 @@ LOCAL sumar, salir, izquierda, derecha, terminar, reiniciar, seahueva, restar
 			xor ax, ax
 			xor bx,bx
 			mov dx, preorder[si]
+			
 			cmp dl ,'$'
 			je seahueva
-			cmp dl, '+'
-			je sumar
 			cmp dl, '-'
 			je restar
+			cmp dl, '+'
+			je sumar
+			cmp dl, '*'
+			je multiplicar
+			cmp dl, '/'
+			je dividir
 			jmp siguiente
 
 			sumar:
@@ -388,12 +392,11 @@ LOCAL sumar, salir, izquierda, derecha, terminar, reiniciar, seahueva, restar
 				mov bx, preorder[si+4]
 				add ax,bx
 				mov preorder[si], ax
-				toString numeros
-				print numeros
-				print saltoLinea
+				;toString numeros
+				;print numeros
+				;print saltoLinea
 				jmp reiniciar
 			restar:
-				print resta
 				verficarIz
 				cmp which[0],'0'
 				je siguiente
@@ -404,9 +407,51 @@ LOCAL sumar, salir, izquierda, derecha, terminar, reiniciar, seahueva, restar
 				mov bx, preorder[si+4]
 				sub ax,bx
 				mov preorder[si], ax
-				toString numeros
-				print numeros
-				print saltoLinea
+				;toString numeros
+				;print numeros
+				;print saltoLinea
+				jmp reiniciar
+
+			multiplicar:
+				verficarIz
+				cmp which[0],'0'
+				je siguiente
+				verficarDe
+				cmp which[0],'0'
+				je siguiente
+				mov ax, preorder[si+2]
+				mov bx, preorder[si+4]
+				mul bx
+				mov preorder[si], ax
+				;toString numeros
+				;print numeros
+				;print saltoLinea
+				jmp reiniciar
+
+			dividir:
+				verficarIz
+				cmp which[0],'0'
+				je siguiente
+				verficarDe
+				cmp which[0],'0'
+				je siguiente
+				push cx
+				push dx
+				xor cx, cx
+				xor ax, ax
+				mov ax, preorder[si+2]
+				mov cx, 2
+				xor dx, dx
+				mov dx,0
+				div cx
+				;pushear;
+				;toString numeros
+				;print numeros
+				;print saltoLinea
+				;popear
+				mov preorder[si], ax
+				pop dx
+				pop cx
 				jmp reiniciar
 			siguiente:
 				add si,2
@@ -417,7 +462,6 @@ LOCAL sumar, salir, izquierda, derecha, terminar, reiniciar, seahueva, restar
 				moverTodos
 				jmp INCIO
 			seahueva:
-				print multi1
 	terminar:
 	pop cx
 endm
@@ -428,8 +472,33 @@ verficarIz macro
 	mov which[0],'0'
 	mov dx,preorder[si+2]
 	cmp dl,'+'
+	je continuar
+	cmp dl,'-'
+	je continuar
+	cmp dl,'*'
+	je continuar
+	cmp dl,'/'
 	je continuar	
 	mov which[0],'1'
+	continuar:
+
+	pop dx
+endm
+
+verficarDe macro
+	LOCAL continuar
+	push dx
+	mov which,'0'
+	mov dx,preorder[si+4]
+	cmp dl,'+'
+	je continuar
+	cmp dl,'-'
+	je continuar
+	cmp dl,'*'
+	je continuar	
+	cmp dl,'/'
+	je continuar
+	mov which,'1'
 
 	continuar:
 
@@ -443,37 +512,24 @@ moverTodos macro
 	inc si 
 	inc si
 	CICLO:
-		xor dx, dx
 		mov dx, preorder[si+4]
 		mov preorder[si], dx
 		inc si 
 		inc si
-		mov imprimir[0],dl
-		add dl,48
-		print imprimir
+		;mov dx, si
+		;mov imprimir[0],dl
+		;print imprimir
+		;print multi1
 		cmp si,300
 		je terminar
 		jmp CICLO
 	terminar:
-		;print multi
-		;print saltoLinea
 	pop cx
 	pop dx
-endm
+endm 
 
-verficarDe macro
-	LOCAL continuar
-	push dx
-	mov which,'0'
-	mov dx,preorder[si+4]
-	cmp dl,'+'
-	je continuar	
-	mov which,'1'
 
-	continuar:
 
-	pop dx
-endm
 ;------------------------------------------------ MANEJO DE ARCHIVOS ---------------------------------------------------------
 abrirArchivo macro ruta,handle
     mov ah,3dh
@@ -564,58 +620,58 @@ toNumber macro string
             Pop si
 endm
 
-toString macro string
-        local Divide, Divide2, EndCr3, Negative, End2, EndGC
-        Push si
-        xor si, si
-        xor cx, cx
-        xor bx, bx
-        xor dx, dx
-        mov dl, 0ah
-        test ax, 1000000000000000b
-            jnz Negative
-        jmp Divide2
-        Negative:
-            neg ax
-            mov string[si], 45
-            inc si
-            jmp Divide2
-        
-        Divide:
-            xor ah, ah
-        Divide2:
-            div dl
-            inc cx
-            Push ax
-            cmp al, 00h
-                je EndCr3
-            jmp Divide
-        EndCr3:
-            pop ax
-            add ah, 30h
-            mov string[si], ah
-            inc si
-        Loop EndCr3
-        mov ah, 24h
-        mov string[si], ah
-        inc si
-        EndGC:
-            Pop si
+toString macro buffer
+	LOCAL negativo,S0,S1,S2,fin
+	pushear
+	xor si,si
+	xor cx,cx
+	xor bx,bx
+	xor dx,dx
+	mov dl,0ah
+	test ax,1000000000000000b
+	jnz negativo
+	jmp S1
+	negativo:
+	neg ax
+	mov buffer[si],45
+	inc si
+	jmp S1
+	S0:
+	xor ah,ah
+	S1:
+	div dl
+	inc cx
+	push ax
+	cmp al,00h
+	je S2
+	jmp S0
+	S2:
+	pop ax
+	add ah,30h
+	mov buffer[si],ah
+	inc si
+	loop S2
+	mov ah,24h
+	mov buffer[si],ah
+	inc si
+	fin:
+	popear
+endm
+
+    Pushear macro
+        push ax
+        push bx
+        push cx
+        push dx
+        push si
+        push di
     endm
 
-    ConvertToStringDH macro string, numberToConvert
-        Push ax
-        Push bx
-
-        xor ax, ax
-        xor bx, bx
-        mov bl, 0ah
-        mov al, numberToConvert
-        div bl
-
-        getNumber string, al
-        getNumber string, ah
-
-        Pop ax
-        Pop bx
+    Popear macro                    
+        pop di
+        pop si
+        pop dx
+        pop cx
+        pop bx
+        pop ax
     endm
