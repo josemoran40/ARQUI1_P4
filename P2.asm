@@ -12,7 +12,8 @@ include macros.asm
  msmError2 db 0ah,0dh,'Error al leer archivo','$'
  msmError3 db 0ah,0dh,'Error al crear archivo','$'
  msmError4 db 0ah,0dh,'Error al Escribir archivo','$'
- msmError5 db 0ah,0dh,'Error al abrir    archivo','$'
+ msmError5 db 0ah,0dh,'Error al abrir archivo','$'
+ msmError6 db 0ah,0dh,'Error al cerrar el archivo','$'
  igual db '0','$'
  actual db 0,'$'
  suma db 'add','$'
@@ -25,6 +26,8 @@ include macros.asm
  divi1 db '/','$'
  bufferJSON db 3000 dup('$')
  bufferCadena db 30 dup('$')
+ bufferNombre db 30 dup('$')
+ bufferID db 30 dup('$')
  rutaIngresada db 200 dup(0),0
  rutaArchivo db 'input.json',00h
  saltoLinea db 0ah,0dh,'$'
@@ -43,8 +46,39 @@ include macros.asm
  signo2 db '0','$'
  numeral db '#','$'
  estado db '0', '$'
+ separador db '--------------------','$'
+ operadas db 600 dup('$')
+ resultados dw 30 dup('$')
+ actResul db 0, '$'
+ mediana db 'mediana: ','$'
+ menor db 'menor: ','$'
+ mayor db 'mayor: ','$'
+ media db 'media: ','$'
+ negarmedia db '0','$'
+ pos db 0
+; ------------------------------------------ REPORTE --------------------------------------------
+reporteNombre db 'reporte.jso',00h
+handleReporte dw ?
+ cabeceraReporte1 db '{',0ah,0dh,09h,'"reporte":','{',0ah,0dh,09h,09h,'"alumno":','{',0ah,0dh,09h,09h,09h,'"nombre":"JOSE EDUARDO MORAN REYES",'
+ cabeceraReporte2 db 0ah,0dh,09h,09h,09h,'"Carnet":"201807455",',0ah,0dh,09h,09h,09h,'"Seccion":"A",',0ah,0dh,09h,09h,09h,'"Curso":"ARQUITECTURA DE COMPUTADORES Y COMPILADORES 1"'
+ caberecaReporte3 db 0ah,0dh,09h,09h,'}',0ah,0dh,09h,09h,'"fecha":{'
+ dia db 0ah,0dh,09h,09h,09h,'"dia":  ,'
+ mes db 0ah,0dh,09h,09h,09h,'"mes":  ,'
+ anio db 0ah,0dh,09h,09h,09h,'"año":  '
+ caberecaReporte4 db 0ah,0dh,09h,09h,'}',0ah,0dh,09h,09h,'"hora":{'
+ hora db 0ah,0dh,09h,09h,09h,'"Hora":  ,'
+ min db 0ah,0dh,09h,09h,09h,'"Min":  ,'
+ segu db 0ah,0dh,09h,09h,09h,'"Seg":  '
+ caberecaReporte5 db 0ah,0dh,09h,09h,'}',0ah,0dh,09h,09h,'"operaciones":{',0ah,0dh,09h,09h,09h
+ caberecaReporte6 db 0ah,0dh,09h,09h,'}'
+ caberecaReporte7 db 0ah,0dh,09h,09h,'}',0ah,0dh,09h,'}',0ah,0dh,'}'
+ caberecaReporte8 db 0ah,0dh,09h,09h,'"estadisticos":{',0ah,0dh,09h,09h,09h
+ saltoYtab db 0ah,0dh,09h,09h,09h
+
 handleCarga dw ?
 handleFichero dw ?
+ bufferFecha db 12 dup('-')
+ bufferHora db 8 dup(':') 
 
 .code 
     main proc
@@ -62,8 +96,9 @@ handleFichero dw ?
             jmp MENU 
 
             OPCION1:
-                print divi
+                print saltoLinea
                 analizarArchivo bufferJSON
+                generarReporte
                 jmp MENU           
             OPCION2:
                 jmp MENU
@@ -83,6 +118,12 @@ handleFichero dw ?
 	        ErrorAbrir:
 	    	print msmError5
 	    	jmp MENU
+
+            
+            CloseError:
+            print msmError6
+	    	getChar
+            jmp MENU  
             SALIR: 
 			MOV ah,4ch
 			int 21h
