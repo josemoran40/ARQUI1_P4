@@ -62,6 +62,7 @@ analizarArchivo macro buffer
 	getTexto rutaIngresada
 	abrirArchivo rutaIngresada, handleCarga
 	leerArchivo 3000, buffer, handleCarga
+	toLower buffer, 3000
 	CICLO:
 
 
@@ -102,9 +103,6 @@ analizarArchivo macro buffer
 		ja omitir
 		jmp numero
 
-
-
-
 		analizar:
 			limpiarCadena bufferCadena,30
 			copiarTexto bufferCadena, buffer
@@ -143,6 +141,9 @@ analizarArchivo macro buffer
 		
 		verNumero:
 			compararCadenas buffercadena, numeral, igual
+			cmp igual,'1'
+			je estadoNumero
+			compararCadenas buffercadena, id, igual
 			cmp igual,'1'
 			je estadoNumero
 
@@ -263,6 +264,26 @@ analizarArchivo macro buffer
 	jmp CICLO
 	fin:	
 endm 
+
+toLower macro string, num
+	LOCAL lo, omitir 
+	pushear 
+	mov cx,num
+	xor si, si
+	lo:
+		cmp string[si],64
+		jb omitir
+		cmp string[si],91
+		ja omitir
+
+		mov al, string[si]
+		add al,32
+		mov string[si], al
+		omitir:
+		inc si
+		loop lo
+	popear
+endm	
 
 agregarToken macro token 
 	push ax
@@ -525,6 +546,12 @@ LOCAL buscarDolar, encontrado, mientras, addDosPuntos
 		mov operadas[di],0ah
 		inc di		
 		mov operadas[di],0dh
+		inc di		
+		mov operadas[di],09h
+		inc di		
+		mov operadas[di],09h
+		inc di		
+		mov operadas[di],09h
 		inc di
  popear
 endm
@@ -673,9 +700,9 @@ LOCAL sumar, salir, izquierda, derecha, terminar, reiniciar, seahueva, restar, d
 				mov bx, preorder[si+4]
 				add ax,bx
 				mov preorder[si], ax
-				;toString numeros
-				;print numeros
-				;print saltoLinea
+				toString numeros
+				print numeros
+				print saltoLinea
 				jmp reiniciar
 			restar:
 				verficarIz
@@ -700,13 +727,18 @@ LOCAL sumar, salir, izquierda, derecha, terminar, reiniciar, seahueva, restar, d
 				verficarDe
 				cmp which[0],'0'
 				je siguiente
+				xor dx, dx
 				mov ax, preorder[si+2]
 				mov bx, preorder[si+4]
 				mul bx
+				print entra
 				mov preorder[si], ax
-				;toString numeros
-				;print numeros
-				;print saltoLinea
+				pushear
+				toString numeros
+				popear
+				print multi
+				print numeros
+				print saltoLinea
 				jmp reiniciar
 
 			dividir:
@@ -751,7 +783,9 @@ LOCAL sumar, salir, izquierda, derecha, terminar, reiniciar, seahueva, restar, d
 			jne CICLO
 			jmp terminar
 			reiniciar:
+				print entra
 				moverTodos
+				print entra
 				jmp INCIO
 			seahueva:
 	terminar:
@@ -1002,7 +1036,7 @@ toString macro string
         xor cx, cx
         xor bx, bx
         xor dx, dx
-        mov dl, 0ah
+        mov di, 0ah
         test ax, 1000000000000000b
             jnz Negative
         jmp Divide2
@@ -1013,22 +1047,22 @@ toString macro string
             jmp Divide2
         
         Divide:
-            xor ah, ah
+            xor dx, dx
         Divide2:
-            div dl
+            div di
             inc cx
-            Push ax
-            cmp al, 00h
+            Push dx
+            cmp ax, 00h
                 je EndCr3
             jmp Divide
         EndCr3:
-            pop ax
-            add ah, 30h
-            mov string[si], ah
+            pop dx
+            add dx, 30h
+            mov string[si], dl
             inc si
         Loop EndCr3
-        mov ah, 24h
-        mov string[si], ah
+        mov dx, 24h
+        mov string[si], dl
         inc si
         EndGC:
             Pop si
@@ -1118,6 +1152,7 @@ generarReporte macro
 	escribirArchivo SIZEOF media-1, media, handleReporte
 	obtenerIndiceNumero
 	escribirArchivo di, numeros, handleReporte
+	calcularModa
 	escribirArchivo SIZEOF caberecaReporte7, caberecaReporte7, handleReporte
 	closefile handleReporte
 endm 
@@ -1238,21 +1273,7 @@ bubbleSort macro
 
         dec dx
         jnz oloop
-	inc bx
-	mov cx, bx
-	xor si, si
-	mov si,0
-	CICLO:
-		mov ax, resultados[si]
-		pushear
-		toString numeros
-		popear
-		print numeros
-		print saltoLinea  
-		inc si
-		inc si
-		dec cx
-		jne CICLO
+
 	
 
 	popear
@@ -1352,10 +1373,146 @@ calcularMedia macro
 endm
 
 calcularModa macro
-
+	
+	LOCAL iloop, oloop, common, CICLO, salir, cambiar, continuar
 	pushear
+	xor dx, dx
+	xor bx, bx
+	xor ax, ax
+	mov al, actResul[0]
+	mov bx,2
+	div bx
+	xor bx, bx
+	mov dx, ax
+	mov bx, ax
 
 
+	dec bx
+    mov cx, bx
+	xor bx, bx; contador1
+	xor dx, dx ;contador2
+	mov bx,0
+	mov si, 0
+	mov di, resultados[0]
+	mov ax, di
+    oloop:
+		cmp di, resultados[si]
+		je continuar
+
+		cmp bx, dx
+		jb cambiar
+		jmp salir
+
+		continuar:
+		inc dx
+		jmp salir
+
+		cambiar:
+			xor ax,ax
+			mov ax, resultados[si-2]
+			mov di, resultados[si]
+			mov bx, dx
+			mov dx,1	
+	
+		salir:
+			mov di, resultados[si]
+
+		inc si
+		inc si	
+        dec cx
+        jne oloop
+
+	print moda
+	pushear
+	toString numeros
+	popear
+	print numeros
 	popear
 endm
 
+verificarShow macro
+	local SHOW, mostrar, salir
+	limpiarCadena textShow, 40
+	getTexto textShow
+	toLower textShow, 40
+	SHOW:
+	cmp textShow[0],115
+	jne salir
+	cmp textShow[1],104
+	jne salir
+	cmp textShow[2],111
+	jne salir
+	cmp textShow[3],119
+	je mostrar
+
+	mostrar:
+	mov si, 4
+	bubbleSort
+	limpiarCadena cadenaNueva, 40
+	copiarTexto2 cadenaNueva, textShow
+
+	compararCadenas cadenaNueva, mediana2,igual
+	cmp igual, '1'
+	je showMediana
+
+	compararCadenas cadenaNueva, media2,igual
+	cmp igual, '1'
+	je showMedia
+
+	compararCadenas cadenaNueva, menor2,igual
+	cmp igual, '1'
+	je showMenor
+
+	compararCadenas cadenaNueva, mayor2,igual
+	cmp igual, '1'
+	je showMayor
+
+	compararCadenas cadenaNueva, moda2,igual
+	cmp igual, '1'
+	je showModa
+	jmp salir
+	showMediana:
+		calcularMediana
+	jmp salir
+
+
+	showMedia:
+		calcularMedia
+	jmp salir
+
+	showMenor:
+		calcularMenor
+	jmp salir
+
+	showMayor:	
+		calcularMayor
+	jmp salir
+
+	showModa:
+		calcularModa
+	jmp salir
+
+	salir:
+
+
+endm
+
+copiarTexto2 macro buffer,lectura
+LOCAL mientras, salir
+	push di
+	xor di, di
+	mov di, 0
+	inc si
+	mientras:
+		cmp lectura[si],'$'
+		je salir
+		mov al, lectura[si]
+		mov buffer[di], al
+
+		inc si
+		inc di
+	jmp mientras
+
+	salir:
+	pop di
+endm

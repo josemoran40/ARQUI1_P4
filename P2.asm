@@ -16,7 +16,7 @@ include macros.asm
  msmError6 db 0ah,0dh,'Error al cerrar el archivo','$'
  igual db '0','$'
  actual db 0,'$'
- suma db 'add','$'
+ suma db 'add','$' 
  resta db 'sub','$'
  multi db 'mul','$'
  divi db 'div','$'
@@ -24,6 +24,8 @@ include macros.asm
  resta1 db '-','$'
  multi1 db '*','$'
  divi1 db '/','$'
+ id db 'id','$'
+ string db 'string','$'
  bufferJSON db 3000 dup('$')
  bufferCadena db 30 dup('$')
  bufferNombre db 30 dup('$')
@@ -51,11 +53,19 @@ include macros.asm
  resultados dw 30 dup('$')
  actResul db 0, '$'
  mediana db 'mediana: ','$'
+  mediana2 db 'mediana','$'
  menor db 'menor: ','$'
+ menor2 db 'menor','$'
  mayor db 'mayor: ','$'
+ mayor2 db 'mayor','$'
  media db 'media: ','$'
+ media2 db 'media','$'
+ moda db 'moda: ','$'
+ moda2 db 'moda','$'
  negarmedia db '0','$'
  pos db 0
+ textShow db 40 dup('$')
+ cadenaNueva db 40 dup('$')
 ; ------------------------------------------ REPORTE --------------------------------------------
 reporteNombre db 'reporte.jso',00h
 handleReporte dw ?
@@ -101,6 +111,7 @@ handleFichero dw ?
                 generarReporte
                 jmp MENU           
             OPCION2:
+                verificarShow
                 jmp MENU
             
 	        ErrorLeer:
