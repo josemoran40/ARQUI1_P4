@@ -66,6 +66,8 @@ include macros.asm
  pos db 0
  textShow db 40 dup('$')
  cadenaNueva db 40 dup('$')
+ dosPuntos db ': ','$'
+ elijaOpcion db 'ELIJA UNA OPCION: ','$'
 ; ------------------------------------------ REPORTE --------------------------------------------
 reporteNombre db 'reporte.jso',00h
 handleReporte dw ?
@@ -79,12 +81,14 @@ handleReporte dw ?
  hora db 0ah,0dh,09h,09h,09h,'"Hora":  ,'
  min db 0ah,0dh,09h,09h,09h,'"Min":  ,'
  segu db 0ah,0dh,09h,09h,09h,'"Seg":  '
- caberecaReporte5 db 0ah,0dh,09h,09h,'}',0ah,0dh,09h,09h,'"operaciones":{',0ah,0dh,09h,09h,09h
+ caberecaReporte5 db 0ah,0dh,09h,09h,'}',0ah,0dh,09h,09h,'"'
+ caberecaReporte9 db '":{',0ah,0dh,09h,09h,09h
  caberecaReporte6 db 0ah,0dh,09h,09h,'}'
  caberecaReporte7 db 0ah,0dh,09h,09h,'}',0ah,0dh,09h,'}',0ah,0dh,'}'
  caberecaReporte8 db 0ah,0dh,09h,09h,'"estadisticos":{',0ah,0dh,09h,09h,09h
  saltoYtab db 0ah,0dh,09h,09h,09h
-
+ tab db 09h,09h,09h,'$'
+ correcto db 'ARCHIVO ANALIZADO CORRECTAMENTE','$'
 handleCarga dw ?
 handleFichero dw ?
  bufferFecha db 12 dup('-')
@@ -96,6 +100,7 @@ handleFichero dw ?
         print intro2
         MENU:
         print opciones
+        print elijaOpcion
              getChar
             cmp al,49
             je OPCION1
@@ -108,9 +113,10 @@ handleFichero dw ?
             OPCION1:
                 print saltoLinea
                 analizarArchivo bufferJSON
-                generarReporte
+                ;generarReporte
                 jmp MENU           
             OPCION2:
+                print saltoLinea
                 verificarShow
                 jmp MENU
             

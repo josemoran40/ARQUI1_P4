@@ -192,7 +192,7 @@ analizarArchivo macro buffer
 			limpiarCadena bufferCadena,30
 			limpiarCadena numeros, 5
 			copiarTexto bufferCadena, buffer
-			buscarNumero 
+			buscarNumero bufferCadena
 			toNumber numeros
 			agregarNumero
 			aumentarPush
@@ -204,16 +204,16 @@ analizarArchivo macro buffer
 			limpiarCadena bufferNombre,30
 			copiarTexto bufferNombre, buffer
 			mov estado[0],'3' 
-			print bufferNombre
-			print saltoLinea
+			;print bufferNombre
+			;print saltoLinea
 			jmp omitir
 
 		getID:
 			limpiarCadena bufferID,30
 			copiarTexto bufferID, buffer
 			mov estado[0],'0' 
-			print bufferID
-			print saltoLinea
+			;print bufferID
+			;print saltoLinea
 			jmp omitir
 
 		numero:
@@ -249,10 +249,10 @@ analizarArchivo macro buffer
 			toNumber numeros
 			agregarResultado
 			aumentarResultado
-			pushear
-			print operadas
-			print saltoLinea
-			popear
+			;pushear
+			;print operadas
+			;print saltoLinea
+			;popear
 			mov estado[0],'3'
 			mov actual[0],0
 			limpiarDW preorder,150
@@ -262,7 +262,10 @@ analizarArchivo macro buffer
 	
 	inc si
 	jmp CICLO
-	fin:	
+	fin:
+	print saltoLinea
+	print correcto
+	print saltoLinea	
 endm 
 
 toLower macro string, num
@@ -556,8 +559,8 @@ LOCAL buscarDolar, encontrado, mientras, addDosPuntos
  popear
 endm
 
-buscarNumero macro
-LOCAL buscarSalto,buscarComilla,comparar, comp,igual1,igual2,fin, encontrado,mientras, salir
+buscarNumero macro string
+LOCAL buscarSalto,buscarComilla,comparar, comp,igual1,igual2,fin, encontrado,mientras, salir, negativo
 pushear 
 
 	xor di, di
@@ -590,15 +593,15 @@ pushear
 		dec cx
 		cmp operadas[di],'"'
 		je igual1
-		cmp bufferCadena[si],'$'
+		cmp string[si],'$'
 		je igual2
 		mov bl,operadas[di]
-		cmp bufferCadena[si],bl
+		cmp string[si],bl
 		je comp
 		jmp fin
 
 	igual1:
-		cmp bufferCadena[si],'$'
+		cmp string[si],'$'
 		jne fin
 		mov igual[0],'1'
 		jmp fin
@@ -640,25 +643,23 @@ pushear
 
 
 popear	
-
 endm
-
 ;
 ;------------------------------------------------- OPERAR --------------------------------------------------------
 operar macro
 	push si
 	push cx
 	push ax
-	print separador
-	print saltoLinea
+	;print separador
+	;print saltoLinea
 	xor ax, ax
 	xor si, si
 	mov si,10
 	ejectuar
 	mov ax,preorder[0]
 	toString numeros
-	print numeros
-	print saltoLinea
+	;print numeros
+	;print saltoLinea
 	pop ax
 	pop cx
 	pop si
@@ -677,6 +678,8 @@ LOCAL sumar, salir, izquierda, derecha, terminar, reiniciar, seahueva, restar, d
 			xor bx,bx
 			mov dx, preorder[si]
 			
+			cmp dh ,'$'
+			jne siguiente
 			cmp dl ,'$'
 			je seahueva
 			cmp dl, '-'
@@ -700,9 +703,6 @@ LOCAL sumar, salir, izquierda, derecha, terminar, reiniciar, seahueva, restar, d
 				mov bx, preorder[si+4]
 				add ax,bx
 				mov preorder[si], ax
-				toString numeros
-				print numeros
-				print saltoLinea
 				jmp reiniciar
 			restar:
 				verficarIz
@@ -731,14 +731,9 @@ LOCAL sumar, salir, izquierda, derecha, terminar, reiniciar, seahueva, restar, d
 				mov ax, preorder[si+2]
 				mov bx, preorder[si+4]
 				mul bx
-				print entra
+				;print entra
 				mov preorder[si], ax
-				pushear
-				toString numeros
-				popear
-				print multi
-				print numeros
-				print saltoLinea
+				
 				jmp reiniciar
 
 			dividir:
@@ -783,9 +778,7 @@ LOCAL sumar, salir, izquierda, derecha, terminar, reiniciar, seahueva, restar, d
 			jne CICLO
 			jmp terminar
 			reiniciar:
-				print entra
 				moverTodos
-				print entra
 				jmp INCIO
 			seahueva:
 	terminar:
@@ -793,10 +786,12 @@ LOCAL sumar, salir, izquierda, derecha, terminar, reiniciar, seahueva, restar, d
 endm
 
 verficarIz macro
-	LOCAL continuar
+	LOCAL continuar,salto
 	push dx
 	mov which[0],'0'
 	mov dx,preorder[si+2]
+	cmp dh ,'$'
+	jne salto
 	cmp dl,'+'
 	je continuar
 	cmp dl,'-'
@@ -805,6 +800,7 @@ verficarIz macro
 	je continuar
 	cmp dl,'/'
 	je continuar	
+	salto:
 	mov which[0],'1'
 	continuar:
 
@@ -812,10 +808,12 @@ verficarIz macro
 endm
 
 verficarDe macro
-	LOCAL continuar
+	LOCAL continuar, salto
 	push dx
 	mov which,'0'
 	mov dx,preorder[si+4]
+	cmp dh ,'$'
+	jne salto
 	cmp dl,'+'
 	je continuar
 	cmp dl,'-'
@@ -824,8 +822,8 @@ verficarDe macro
 	je continuar	
 	cmp dl,'/'
 	je continuar
+	salto:
 	mov which,'1'
-
 	continuar:
 
 	pop dx
@@ -1127,9 +1125,11 @@ generarReporte macro
 	escribirArchivo SIZEOF min, min, handleReporte
 	escribirArchivo SIZEOF segu, segu, handleReporte
 	escribirArchivo SIZEOF caberecaReporte5, caberecaReporte5, handleReporte
-	obtenerIndice
+	obtenerIndice cadenaNueva 
+	escribirArchivo di, cadenaNueva, handleReporte
+	escribirArchivo SIZEOF caberecaReporte9, caberecaReporte9, handleReporte
+	obtenerIndice operadas
 	escribirArchivo di, operadas, handleReporte
-	
 	escribirArchivo SIZEOF caberecaReporte6, caberecaReporte6, handleReporte
 	escribirArchivo SIZEOF caberecaReporte8, caberecaReporte8, handleReporte
 	bubbleSort
@@ -1138,32 +1138,40 @@ generarReporte macro
 	obtenerIndiceNumero
 	escribirArchivo di, numeros, handleReporte
 	escribirArchivo SIZEOF saltoYtab, saltoYtab, handleReporte
+	print tab
 	calcularMenor
 	escribirArchivo SIZEOF menor-1, menor, handleReporte
 	obtenerIndiceNumero
 	escribirArchivo di, numeros, handleReporte
 	escribirArchivo SIZEOF saltoYtab, saltoYtab, handleReporte
+	print tab
 	calcularMayor
 	escribirArchivo SIZEOF mayor-1, mayor, handleReporte
 	obtenerIndiceNumero
 	escribirArchivo di, numeros, handleReporte
 	escribirArchivo SIZEOF saltoYtab, saltoYtab, handleReporte
+	print tab
 	calcularMedia
 	escribirArchivo SIZEOF media-1, media, handleReporte
 	obtenerIndiceNumero
 	escribirArchivo di, numeros, handleReporte
+	print tab
 	calcularModa
+	escribirArchivo SIZEOF saltoYtab, saltoYtab, handleReporte
+	escribirArchivo SIZEOF moda-1, moda, handleReporte
+	obtenerIndiceNumero
+	escribirArchivo di, numeros, handleReporte
 	escribirArchivo SIZEOF caberecaReporte7, caberecaReporte7, handleReporte
 	closefile handleReporte
 endm 
 
 
-obtenerIndice macro
+obtenerIndice macro string
 	LOCAL mientras, fin
 	xor di, di
 	mov di,0
 	mientras:
-		cmp operadas[di],'$'
+		cmp string[di],'$'
 		je fin
 		inc di
 		jmp mientras
@@ -1431,7 +1439,7 @@ calcularModa macro
 endm
 
 verificarShow macro
-	local SHOW, mostrar, salir
+	local SHOW, mostrar, salir, showNombre
 	limpiarCadena textShow, 40
 	getTexto textShow
 	toLower textShow, 40
@@ -1470,27 +1478,51 @@ verificarShow macro
 	compararCadenas cadenaNueva, moda2,igual
 	cmp igual, '1'
 	je showModa
-	jmp salir
+
+	compararCadenas cadenaNueva, bufferNombre,igual
+	cmp igual, '1'
+	je showNombre
+
+	jmp showOperacion
 	showMediana:
+		print tab
 		calcularMediana
 	jmp salir
 
 
 	showMedia:
+		print tab
 		calcularMedia
 	jmp salir
 
 	showMenor:
+		print tab
 		calcularMenor
 	jmp salir
 
-	showMayor:	
+	showMayor:
+		print tab	
 		calcularMayor
 	jmp salir
 
 	showModa:
+		print tab
 		calcularModa
 	jmp salir
+
+	showNombre:
+		print tab
+		print operadas
+		generarReporte
+	jmp salir
+
+	showOperacion:
+		print tab
+		print cadenaNueva	
+		print dosPuntos	
+		limpiarCadena numeros, 5
+		buscarNumero cadenaNueva
+		print numeros
 
 	salir:
 
