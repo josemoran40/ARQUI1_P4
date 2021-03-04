@@ -1,17 +1,17 @@
 
-;--------------------------------------------------- IMPRMIR ---------------------------------------------
-print macro cadena 
- LOCAL ETIQUETA 
- pushear 
- ETIQUETA: 
-	MOV ah,09h 
-	MOV dx,@data
-	MOV ds,dx 
-	MOV dx, offset cadena
-	int 21h 
+	;--------------------------------------------------- IMPRMIR ---------------------------------------------
+	print macro cadena 
+	LOCAL ETIQUETA 
+	pushear 
+	ETIQUETA: 
+		MOV ah,09h 
+		MOV dx,@data
+		MOV ds,dx 
+		MOV dx, offset cadena
+		int 21h 
 
-popear
-endm
+	popear
+	endm
 
 getChar macro
     mov ah,01h
@@ -1027,62 +1027,6 @@ toNumber macro string
             Pop si
 endm
 
-toString macro string
-	local Divide, Divide2, EndCr3, Negative, End2, EndGC
-        Push si
-        xor si, si
-        xor cx, cx
-        xor bx, bx
-        xor dx, dx
-        mov di, 0ah
-        test ax, 1000000000000000b
-            jnz Negative
-        jmp Divide2
-        Negative:
-            neg ax
-            mov string[si], 45
-            inc si
-            jmp Divide2
-        
-        Divide:
-            xor dx, dx
-        Divide2:
-            div di
-            inc cx
-            Push dx
-            cmp ax, 00h
-                je EndCr3
-            jmp Divide
-        EndCr3:
-            pop dx
-            add dx, 30h
-            mov string[si], dl
-            inc si
-        Loop EndCr3
-        mov dx, 24h
-        mov string[si], dl
-        inc si
-        EndGC:
-            Pop si
-endm
-
-    Pushear macro
-        push ax
-        push bx
-        push cx
-        push dx
-        push si
-        push di
-    endm
-
-    Popear macro                    
-        pop di
-        pop si
-        pop dx
-        pop cx
-        pop bx
-        pop ax
-endm
 
 ;------------------------------------------ REPORTE --------------------------------------------------------
 generarReporte macro
@@ -1548,3 +1492,7 @@ LOCAL mientras, salir
 	salir:
 	pop di
 endm
+
+
+
+
